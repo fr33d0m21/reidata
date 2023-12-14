@@ -1,7 +1,9 @@
 import http.client
 import os
 import sys
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 import subprocess
 
 # Hardcoded API keys (Replace with your actual keys for testing)
@@ -9,7 +11,6 @@ OPENAI_API_KEY = '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'
 ATTOM_DATA_API_KEY = '1c69e1c6a6036307e2abfac26ea55fc5'
 
 # Setting the API keys
-openai.api_key = OPENAI_API_KEY
 
 # Now you can use openai.api_key and ATTOM_DATA_API_KEY in your application
 
@@ -91,18 +92,17 @@ def generate_property_report(formatted_data):
 
 def handle_user_query(query, context):
   try:
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{
-            "role": "system",
-            "content": "You are a knowledgeable assistant."
-        }, {
-            "role": "user",
-            "content": context
-        }, {
-            "role": "user",
-            "content": query
-        }])
+    response = client.chat.completions.create(model="gpt-4",
+    messages=[{
+        "role": "system",
+        "content": "You are a knowledgeable assistant."
+    }, {
+        "role": "user",
+        "content": context
+    }, {
+        "role": "user",
+        "content": query
+    }])
     return response.choices[0].message['content']
   except Exception as e:
     sys.stderr.write(f"Error handling user query: {e}\n")
@@ -124,20 +124,19 @@ class InteractivePropertySession:
   def ask_question(self, question):
     self.add_message_to_history("user", question)
     try:
-      response = openai.ChatCompletion.create(
-          model="gpt-4",
-          messages=[{
-              "role":
-              "system",
-              "content":
-              "You are a knowledgeable assistant about real estate properties."
-          }, {
-              "role": "user",
-              "content": self.context
-          }, *self.conversation_history, {
-              "role": "user",
-              "content": question
-          }])
+      response = client.chat.completions.create(model="gpt-4",
+      messages=[{
+          "role":
+          "system",
+          "content":
+          "You are a knowledgeable assistant about real estate properties."
+      }, {
+          "role": "user",
+          "content": self.context
+      }, *self.conversation_history, {
+          "role": "user",
+          "content": question
+      }])
       answer = response.choices[0].message['content']
       self.add_message_to_history("assistant", answer)
       return answer
@@ -153,7 +152,9 @@ class InteractivePropertySession:
 # print(session.ask_question("What is the history of renovations for this property?"))
 
 
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def main():
     print("Welcome to the Property Information Assistant!")
@@ -192,14 +193,12 @@ while True:
             break
 
 
-response = openai.ChatCompletion.create(
-          model="gpt-3.5-turbo",  # or "gpt-4"
-          messages=[
-              {"role": "system", "content": "You are a knowledgeable assistant."},
-              {"role": "user", "content": report},
-              {"role": "user", "content": user_query}
-          ]
-      )
+response = client.chat.completions.create(model="gpt-3.5-turbo",  # or "gpt-4"
+messages=[
+    {"role": "system", "content": "You are a knowledgeable assistant."},
+    {"role": "user", "content": report},
+    {"role": "user", "content": user_query}
+])
 
 answer = response.choices[0].message['content']
 print("Answer:\n", answer)
