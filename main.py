@@ -1,35 +1,53 @@
-import argparse
-import os
-from openai_gpt_client import generate_repair_proposal, analyze_image_with_gpt4
-from image_preprocessor import preprocess_image
-from pdf_text_extractor import extract_text_from_pdf
+import openai
 
-def main():
-    parser = argparse.ArgumentParser(description="Process text and images with GPT-4.")
-    parser.add_argument('--text', type=str, help='Text to process with GPT-4.')
-    parser.add_argument('--image', type=str, help='Path to the image file for GPT-4 analysis.')
-    parser.add_argument('--pdf', type=str, help='Path to the PDF file for text extraction.')
-    args = parser.parse_args()
+def initialize_openai_api(api_key):
+    """
+    Initialize the OpenAI API client with the given API key.
+    
+    :param api_key: API key for OpenAI.
+    """
+    openai.api_key = api_key
 
-    api_key = os.getenv("OPENAI_API_KEY")  # Ensure your API key is set in environment variables
+def generate_repair_proposal(prompt_text, api_key):
+    """
+    Generate structured repair proposals using GPT-4 based on text input.
 
-    if not api_key:
-        print("OpenAI API key not found. Please set your API key as an environment variable.")
-        return
+    :param prompt_text: Text to process with GPT-4.
+    :param api_key: API key for OpenAI.
+    :return: Generated proposal text.
+    """
+    initialize_openai_api(api_key)
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an AI trained to create structured repair proposals."},
+            {"role": "user", "content": prompt_text}
+        ],
+        max_tokens=2048
+    )
+    return response.choices[0].message.content if response.choices else ""
 
-    if args.text:
-        print("Generating repair proposal based on text...")
-        print(generate_repair_proposal(args.text, api_key))
+def analyze_image_with_gpt4(image_data, question, api_key):
+    """
+    Analyze an image using GPT-4 with Vision and return the analysis result.
 
-    if args.image:
-        print("Analyzing image with GPT-4 Vision...")
-        preprocessed_image = preprocess_image(args.image)
-        print(analyze_image_with_gpt4(preprocessed_image, "What’s in this image?", api_key))
-
-    if args.pdf:
-        print("Extracting text from PDF and processing...")
-        pdf_text = extract_text_from_pdf(args.pdf)
-        print(generate_repair_proposal(pdf_text, api_key))
-
-if __name__ == "__main__":
-    main()
+    :param image_data: Base64 encoded string of the image or URL to the image.
+    :param question: Question or description prompt for the image analysis.
+    :param api_key: API key for OpenAI.
+    :return: Analysis result from GPT-4.
+    """
+    initialize_openai_api(api_key)
+    response = openai.ChatCompletion.create(
+        model="gpt-4-vision-preview",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": question},
+                    {"type": "image", "data": image_data}
+                ]
+            }
+        ],
+        max_tokens=300
+    )
+    return response.choices[0].message.content if response.choices else ""
